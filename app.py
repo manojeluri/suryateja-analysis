@@ -247,12 +247,18 @@ def analyze_excel_data(df):
         if 'COMPANY' in df.columns:
             total_companies = df['COMPANY'].nunique()
             insights.append(f"Products from {total_companies} companies")
-            
-            # Top company
+
+            # Company-wise sales amounts
             if not company_summary.empty:
+                insights.append("\n--- Company-wise Sales ---")
+                for company, row in company_summary.iterrows():
+                    revenue = row['Total Revenue']
+                    insights.append(f"{company}: ₹{revenue:,.2f}")
+
+                # Top company summary
                 top_company = company_summary.index[0]
                 top_company_revenue = company_summary.iloc[0]['Total Revenue']
-                insights.append(f"Top Company: {top_company} (₹{top_company_revenue:,.2f})")
+                insights.append(f"\nTop Company: {top_company} (₹{top_company_revenue:,.2f})")
 
         if 'GST' in df.columns:
             total_gst = (df['TAXBLEAMT'] * df['GST'] / 100).sum()

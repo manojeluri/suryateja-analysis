@@ -8,132 +8,73 @@ import base64
 from io import BytesIO
 import json
 import traceback
+import os
 
 app = Flask(__name__)
 
 # ============================================
-# Company Product Mappings
+# Company Product Mappings - Loaded from CSV files
 # ============================================
-COMPANY_PRODUCTS = {
-    "Gharda": [
-        "Aniloguard 1 Lt", "Aniloguard 500ml", "Bakeel 1 Lt", "Bakeel 250ml", "Bakeel 500ml",
-        "Black 500ml", "Boxer 100ml", "Boxer 250ml", "Chamatkar 250ml", "Chamatkar 500gms",
-        "Dunet 100ml", "Guru 1kg", "Guru 500gms", "Samarth 500ml", "Urja 200ml",
-        "Vow 1 Lt", "Vow 500ml", "Zolt 500ml"
-    ],
-    "Adama": [
-        "Agas 250gms", "Agas 25gms", "Agas 500gms", "Agil 250ml", "Agil 500ml",
-        "Confidor 200ml", "Confidor 70wg 35gms", "Confidor 70wg 70gms", "Nomolt 250ml",
-        "Nomolt 500ml", "Pegasus 1kg", "Ronstar 250ml", "Ronstar 500ml", "San Hero 100ml",
-        "Tilt 250ml", "Topsin 250gms", "Topsin 500gms"
-    ],
-    "Best Agrolife": [
-        "Axeman 333", "Bestline 200 Gm", "Cubax Power 1 Lt", "Cubax Power 250ml",
-        "Cubax Power 500ml", "Dynamita 333ml", "Moximate 1 Lt", "Moximate 250ml",
-        "Moximate 500ml", "Pasto 50ml", "Pasto 250ml", "Zygant 1 Lt"
-    ],
-    "Godrej": [
-        "Armurox 300ml", "Asatrus 500gms", "Double 100ml", "Double 500ml",
-        "Gracia 160ml", "Gracia 400ml", "Greeva 50gms", "Greeva 250gms",
-        "Nominee Gold 250ml", "Nominee Gold 500ml", "Starban 1 Lt", "Starban 250ml"
-    ],
-    "Indofil": [
-        "Alecto 100ml", "Alecto 50 Ml", "Avatar 1kg", "Avatar 500gms", "Baan 120gms",
-        "Baan 240gms", "Baan 30gms", "Baan 60gms", "Carbomain 5kg 5kg", "Dost 1kg",
-        "Dost 500gms", "Evito 1 Lt", "Evito 250ml", "Evito 500ml", "M-45 1kg",
-        "M-45 500gms", "Padiwix 600ml", "Score 1 Lt", "Score 250ml", "Score 50 Ml",
-        "Unison 100ml", "Unison 250ml", "Unison 500ml"
-    ],
-    "Nichino": [
-        "Akio 1 Lt", "Akio 500ml", "Bifors 1 Lt", "Bifors 500gms", "Chandika 1 Lt",
-        "Chandika 500ml", "Fluxy 1 Lt", "Fluxy 250ml", "Fluxy 500ml", "Fluxyr 1 Lt",
-        "Fluxyr 500ml", "Imishot 1 Lt", "Imishot 500ml", "Takaf 1 Lt", "Takaf 500ml"
-    ],
-    "Nova Agri Science": [
-        "Atrino 1kg", "Atrino 500gms", "Azoman 1kg", "Azoman 250gms", "Azoman 500gms",
-        "Ecotin 1kg", "Ecotin 500gms", "Instomin 500ml", "Instomin 250ml", "Mantomin 1kg",
-        "Micromin 500gms", "Zinkmin 1kg"
-    ],
-    "Nova Agri Tech": [
-        "Nova Feret 19;19;19 1kg", "Nova Feret 19;19;19 25kg", "Nova Fert Cn 1kg",
-        "Nova Fert Cn 25kg", "Nova Googley 10kg", "Nova Potash 1kg", "Nova Proto 1kg",
-        "Nova Proto 250gms"
-    ],
-    "Superior": [
-        "Benot 250ml", "Dollar 250ml", "Dollar 500ml", "Dollar[gr] 5kg", "Dyeton 250ml",
-        "Dyeton 500ml", "Galben 1 Lt", "Kohinoor 250ml", "Kohinoor 500ml", "Movento 250ml"
-    ],
-    "Swal": [
-        "Arryan 400gms", "Arryan 800gms", "Delma 300gms", "Delma 600gms", "Dsp99 1 Lt",
-        "Dsp99 250ml", "Dsp99 500ml", "Durnet 250ml", "Durnet 500ml", "Filia 240ml",
-        "Filia 480ml", "Juva 250ml", "Juva 500ml", "Kadett 1 Lt", "Kadett 500ml",
-        "Lancer Gold 100ml", "Lancer Gold 250ml", "Lancer Gold 500ml", "Montaf 1 Lt",
-        "Montaf 500ml", "Radiant 250ml", "Radiant 500ml", "Rimostar 1 Lt", "Rimostar 500ml",
-        "Solomon 1 Lt", "Solomon 250ml", "Viraat 1 Lt", "Viraat 500ml"
-    ],
-    "VNR": [
-        "Almix 8gr", "Azaka Duo 200ml", "Benevia 240ml", "Cabriotop 300gms", "Cabriotop 600gms",
-        "Rifit 1 Lt", "Rifit 500ml", "Sumilex 500gms"
-    ],
-    "Balaji": [
-        "Acerbo 1 Lt", "Acerbo 200ml", "Aliette 250gms", "Aliette 500gms", "Amicus 1 Lt",
-        "Amicus 500ml", "Ampligo 250ml", "Ampligo 80ml", "Areva 500ml", "Benzer 1 Lt",
-        "Benzer 250ml", "Coragen 60ml", "Double Power 1 Lt", "Double Power 250ml",
-        "Double Power 500ml", "Fame 500ml", "Flint 200gms", "Flint 500gms", "Kamikazi 250ml",
-        "Kamikazi 500ml", "Prime Power 200ml", "Prime Power 500ml", "Regent 250ml",
-        "Ridomil 1kg", "Ridomil 500gms", "Tata Mida 1 Lt", "Tata Mida 250ml", "Tata Mida 500ml",
-        "Virtako 250ml", "Volium Flexi 250ml", "Volium Flexi 500ml", "Volium Targour 250ml"
-    ],
-    "Chennakesava": [
-        "A S A Plus 5kg", "Agripro 1kg", "Agripro 250gms", "Agripro 500gms", "Agrofer 100gms",
-        "Agrofer 250gms", "Agromin Gold 1 Lt", "Agromin Gold 500ml", "Agromin Max 1kg",
-        "Agromin Max 250gms", "Agromin Max 500gms", "Boran[aries] 1kg", "Boran[aries] 250gms",
-        "Boran[aries] 500gms", "Chelamin 100gms", "Cil 10;26;26 50kg", "Cil 14;35;14 50kg",
-        "Cil 20;20;0;13 50kg", "Cil Dap 50kg", "Cil Mop 50kg", "Cil Ssp 50kg", "Cil Urea 45kg",
-        "Endomyco 125gms", "F 20;20;0;13 50kg", "Godavari Tri Gold 50kg", "Gromor Nano Dap 1 Lt",
-        "Gsfc A/s 50kg", "Macrofert 20;20;20 1kg", "Mag Mix 1kg"
-    ],
-    "PI": [
-        "Biovita 1 Lt", "Biovita 500ml", "Biovita Granuls 10kg", "Biovita X 25kg",
-        "Biovita X 4kg", "Green Gold 10kg", "Pi Bio Super 10kg", "Pi Force 100ml",
-        "Pi Force 250ml", "Pi Force 500ml", "Pi Lanz 100ml", "Pi Lanz 250ml",
-        "Pi Lanz 500ml", "Pi Multi Micro 25kg", "Pi Multi Trace 25kg", "Pi Vita 200ml",
-        "Pyra Gold 250gms", "Pyra Gold 500gms"
-    ],
-    "Srikar": [
-        "Prime Granules 5kg", "Ripkil Top 250ml", "Ripkil Top 500ml", "Sixer 250ml",
-        "Sixer 500ml"
-    ],
-    "Anjaneya": [
-        "Acemain 1kg", "Acemain 250gms", "Acemain 500gms", "Argyle 250gms", "Bahaar 1 Lt",
-        "Bahaar 500ml", "Bomber 200ml", "Bulldo 250ml", "Bulldo 500ml", "Chooper 500ml",
-        "Dorito 250gms", "Dorito 500gms", "Ekka 500ml", "Green Stone 250ml", "Green Stone 500ml",
-        "Insta 1 Lt", "Insta 500ml", "Kabuto 250ml", "Kabuto 500ml", "Kabuto Plus 500ml",
-        "Lancer 250ml", "Lancer 500ml", "Mastak 250gms", "Mastak 500gms", "Meto 1 Lt",
-        "Meto 500ml", "Monocil 250ml", "Monocil 500ml", "Nisarga 500ml", "Power Point 250ml",
-        "Power Point 500ml", "Ruler 1 Lt", "Ruler 500ml", "Samrudhi 500ml", "Seimlet 240gms",
-        "Semarai 1 Lt", "Serang 500gms", "Suraksha 250ml", "Super Lava 5g 250ml",
-        "Super Max 500gms", "Zenetra 1 Lt", "Zenetra 250ml", "Zenetra 500ml"
-    ],
-    "Sairam": [
-        "Amistar 1 Lt", "Amistar 500ml", "Bavistin 500gms", "Calaris Xtra 1.4lt",
-        "Cythion 1 Lt", "Cythion 500ml", "Exel Mera 1 Lt", "Karait 1 Lt", "Karait 500ml",
-        "Kasumin 1 Lt", "Kasumin 500ml", "Monocil[e] 250ml", "Monocil[e] 500ml",
-        "Nativo 300gms", "Providar 100ml", "Providar 250ml", "Providar 500ml",
-        "Sulpher 90% Wp 1kg", "Taqat 1 Lt", "Taqat 250ml", "Taqat 500ml", "Trassid 500ml"
-    ],
-    "T Stanes": [
-        "Biocure 1kg", "Biocure-b 1kg", "Fytovita 1 Lt", "Fytovita 500ml", "Kurax 1 Lt",
-        "Kurax 500ml", "S.o.p 1kg", "S.o.p 25kg", "Stanomax 1 Lt", "Stanomax 250ml",
-        "Stanomax 500ml", "Stenomin 500gms", "Super Lava 5g 1 Lt", "Super Lava 5g 250ml",
-        "Super Max 500gms"
-    ],
-    "Syngenta": [
-        "Actara 100gms", "Actara 250gms", "Amistar 1 Lt", "Capcadis 250gms", "Capcadis 50gms",
-        "Curacron 500ml", "Pegasus 500gms", "Quantis 400ml", "Redomil Gold 100gms",
-        "Redomil Gold 250gms", "Redomil Gold 500gms"
-    ]
-}
+def load_company_products_from_csv(folder_path="Company Wise Products"):
+    """
+    Load company-product mappings from CSV files in the specified folder
+    Each CSV file should be named: CompanyName_Products.csv
+    """
+    company_products = {}
+
+    if not os.path.exists(folder_path):
+        print(f"⚠️  Warning: '{folder_path}' folder not found. Using empty mappings.")
+        return company_products
+
+    # Get all CSV files
+    csv_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.csv')]
+
+    print(f"\n📁 Loading company products from '{folder_path}/' folder...")
+    print(f"   Found {len(csv_files)} CSV files")
+
+    for csv_file in csv_files:
+        # Extract company name from filename
+        # Example: "Gharda_Products.csv" -> "Gharda"
+        company_name = csv_file.replace('_Products.csv', '').replace('_Product_Names.csv', '')
+
+        # Clean up company name (handle special cases)
+        company_name = company_name.replace('_', ' ')
+        if company_name == 'BestAgrolife':
+            company_name = 'Best Agrolife'
+        elif company_name == 'NovaAgriScience':
+            company_name = 'Nova Agri Science'
+        elif company_name == 'Nova Agri Tech':
+            pass  # Already correct
+        elif company_name == 'T Stanes':
+            pass  # Already correct
+
+        # Read CSV file
+        file_path = os.path.join(folder_path, csv_file)
+        try:
+            df = pd.read_csv(file_path)
+
+            # Get product names (assuming first column is "Product Name")
+            if 'Product Name' in df.columns:
+                products = df['Product Name'].dropna().str.strip().tolist()
+            else:
+                # If no header, assume first column contains products
+                products = df.iloc[:, 0].dropna().str.strip().tolist()
+
+            # Remove empty strings
+            products = [p for p in products if p]
+
+            company_products[company_name] = products
+            print(f"   ✅ {company_name}: {len(products)} products")
+
+        except Exception as e:
+            print(f"   ⚠️  Error reading {csv_file}: {str(e)}")
+
+    print(f"\n✅ Loaded {len(company_products)} companies with {sum(len(p) for p in company_products.values())} total products")
+
+    return company_products
+
+# Load company products from CSV files
+COMPANY_PRODUCTS = load_company_products_from_csv()
 
 # Create reverse mapping: product -> company
 PRODUCT_TO_COMPANY = {}

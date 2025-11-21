@@ -3,8 +3,8 @@ Vercel Serverless Function for Sales Data Analysis
 Receives JSON data from n8n and returns PDF report
 """
 
+from flask import Flask, request, jsonify, Response
 import json
-import base64
 import io
 import pandas as pd
 import matplotlib
@@ -20,7 +20,7 @@ import sys
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import FancyBboxPatch
 
-# Add parent directory to path to import helper modules
+# Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Set style for better visualizations
@@ -312,33 +312,33 @@ def analyze_data(json_data):
             'traceback': traceback.format_exc()
         }
 
-def handler(request):
-    """Vercel serverless handler function"""
-    # Handle CORS
-    headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
-        'Access-Control-Allow-Headers': 'Content-Type'
-    }
+# Create Flask app
+app = Flask(__name__)
+
+@app.route('/', methods=['POST', 'OPTIONS', 'GET'])
+@app.route('/api/analyze', methods=['POST', 'OPTIONS', 'GET'])
+def analyze():
+    """Main endpoint"""
     
-    # Handle OPTIONS (CORS preflight)
+    # Handle CORS preflight
     if request.method == 'OPTIONS':
-        return ('', 200, headers)
+        response = Response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS, GET'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response, 200
     
     # Handle GET
     if request.method == 'GET':
-        return (json.dumps({
+        return jsonify({
             'status': 'ok',
             'message': 'Sales Analysis API - POST JSON data to generate PDF report',
             'endpoint': '/api/analyze'
-        }), 200, {**headers, 'Content-Type': 'application/json'})
+        }), 200
     
     try:
         # Parse request body
-        if request.is_json:
-            body = request.get_json()
-        else:
-            body = json.loads(request.get_data(as_text=True))
+        body = request.get_json(force=True)
         
         # Get data from request
         data = None
@@ -352,39 +352,44 @@ def handler(request):
             data = body
         
         if not data:
-            return (json.dumps({
+            return jsonify({
                 'success': False,
                 'error': 'No data provided in request body',
                 'received_keys': list(body.keys()) if isinstance(body, dict) else 'body is not a dict'
-            }), 400, {**headers, 'Content-Type': 'application/json'})
+            }), 400
         
         # Analyze data
         result = analyze_data(data)
         
         # Check if analysis was successful
         if not result.get('success'):
-            return (json.dumps({
+            return jsonify({
                 'success': False,
                 'error': result.get('error'),
                 'traceback': result.get('traceback')
-            }), 400, {**headers, 'Content-Type': 'application/json'})
+            }), 400
         
         # Return PDF as binary
         pdf_bytes = result['pdf_bytes']
         filename = result['filename']
         
-        pdf_headers = {
-            **headers,
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': f'attachment; filename="{filename}"'
-        }
-        
-        return (pdf_bytes, 200, pdf_headers)
+        response = Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Access-Control-Allow-Origin': '*'
+            }
+        )
+        return response, 200
         
     except Exception as e:
         import traceback as tb
-        return (json.dumps({
+        return jsonify({
             'success': False,
             'error': str(e),
             'traceback': tb.format_exc()
-        }), 500, {**headers, 'Content-Type': 'application/json'})
+        }), 500
+
+# Vercel serverless handler
+app = app

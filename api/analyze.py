@@ -316,16 +316,23 @@ def analyze_data(json_data):
 # Create Flask app for Vercel
 app = Flask(__name__)
 
-@app.route('/', methods=['POST', 'OPTIONS'])
-@app.route('/api/analyze', methods=['POST', 'OPTIONS'])
+@app.route('/', methods=['POST', 'OPTIONS', 'GET'])
 def analyze_endpoint():
     """Main endpoint for Vercel serverless function"""
+
+    # Handle GET request for testing
+    if request.method == 'GET':
+        return jsonify({
+            'status': 'ok',
+            'message': 'Sales Analysis API - POST JSON data to generate PDF report',
+            'endpoint': '/api/analyze'
+        }), 200
 
     # Handle CORS preflight
     if request.method == 'OPTIONS':
         response = Response()
         response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS, GET'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
         return response, 200
 

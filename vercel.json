@@ -5,5 +5,11 @@
       "src": "api/analyze.py",
       "use": "@vercel/python"
     }
+  ],
+  "routes": [
+    {
+      "src": "/api/analyze",
+      "dest": "api/analyze.py"
+    }
   ]
 }

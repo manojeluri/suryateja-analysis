@@ -1,6 +1,6 @@
 """
 Vercel Serverless Function for Sales Data Analysis
-Receives JSON data from n8n and returns PDF report as base64
+Receives JSON data from n8n and returns PDF report
 """
 
 import json
@@ -19,7 +19,6 @@ import os
 import sys
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import FancyBboxPatch
-from flask import Flask, request, jsonify, Response
 
 # Add parent directory to path to import helper modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -313,88 +312,79 @@ def analyze_data(json_data):
             'traceback': traceback.format_exc()
         }
 
-# Create Flask app for Vercel
-app = Flask(__name__)
-
-@app.route('/', methods=['POST', 'OPTIONS', 'GET'])
-def analyze_endpoint():
-    """Main endpoint for Vercel serverless function"""
-
-    # Handle GET request for testing
+def handler(request):
+    """Vercel serverless handler function"""
+    # Handle CORS
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+        'Access-Control-Allow-Headers': 'Content-Type'
+    }
+    
+    # Handle OPTIONS (CORS preflight)
+    if request.method == 'OPTIONS':
+        return ('', 200, headers)
+    
+    # Handle GET
     if request.method == 'GET':
-        return jsonify({
+        return (json.dumps({
             'status': 'ok',
             'message': 'Sales Analysis API - POST JSON data to generate PDF report',
             'endpoint': '/api/analyze'
-        }), 200
-
-    # Handle CORS preflight
-    if request.method == 'OPTIONS':
-        response = Response()
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS, GET'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response, 200
-
+        }), 200, {**headers, 'Content-Type': 'application/json'})
+    
     try:
-        # Get JSON data from request
-        body = request.get_json(force=True)
-
-        # Get data from request - handle different formats
+        # Parse request body
+        if request.is_json:
+            body = request.get_json()
+        else:
+            body = json.loads(request.get_data(as_text=True))
+        
+        # Get data from request
         data = None
-
-        # Try to get data from different possible locations
         if 'data' in body:
             data = body['data']
-            # Handle n8n expression format (starts with '=')
             if isinstance(data, str) and data.startswith('='):
                 data = json.loads(data[1:])
             elif isinstance(data, str):
                 data = json.loads(data)
         elif isinstance(body, list):
             data = body
-
+        
         if not data:
-            return jsonify({
+            return (json.dumps({
                 'success': False,
                 'error': 'No data provided in request body',
                 'received_keys': list(body.keys()) if isinstance(body, dict) else 'body is not a dict'
-            }), 400
-
+            }), 400, {**headers, 'Content-Type': 'application/json'})
+        
         # Analyze data
         result = analyze_data(data)
-
+        
         # Check if analysis was successful
         if not result.get('success'):
-            response = jsonify({
+            return (json.dumps({
                 'success': False,
                 'error': result.get('error'),
                 'traceback': result.get('traceback')
-            })
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            return response, 400
-
+            }), 400, {**headers, 'Content-Type': 'application/json'})
+        
         # Return PDF as binary
         pdf_bytes = result['pdf_bytes']
         filename = result['filename']
-
-        response = Response(
-            pdf_bytes,
-            mimetype='application/pdf',
-            headers={
-                'Content-Disposition': f'attachment; filename="{filename}"',
-                'Access-Control-Allow-Origin': '*'
-            }
-        )
-        return response, 200
-
+        
+        pdf_headers = {
+            **headers,
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        
+        return (pdf_bytes, 200, pdf_headers)
+        
     except Exception as e:
         import traceback as tb
-        return jsonify({
+        return (json.dumps({
             'success': False,
             'error': str(e),
             'traceback': tb.format_exc()
-        }), 500
-
-# Export app for Vercel
-handler = app
+        }), 500, {**headers, 'Content-Type': 'application/json'})

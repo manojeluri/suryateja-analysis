@@ -200,46 +200,123 @@ Top Company by Revenue:
         pdf.savefig(fig, bbox_inches='tight')
         plt.close()
 
-        # Page 2: Top Products by Revenue Chart
-        fig = plt.figure(figsize=(11, 8.5))
-        top_products = df.nlargest(15, 'TAXBLEAMT')
-        colors = plt.cm.Spectral(np.linspace(0, 1, len(top_products)))
-        plt.barh(range(len(top_products)), top_products['TAXBLEAMT'], color=colors)
-        plt.yticks(range(len(top_products)), top_products['ITNAME'])
-        plt.xlabel('Revenue (Rs.)', fontsize=12, fontweight='bold')
-        plt.title('Top 15 Products by Revenue', fontsize=16, fontweight='bold', pad=20)
-        plt.gca().invert_yaxis()
-        plt.tight_layout()
+        # Page 2: Top Products by Revenue Table
+        fig, ax = plt.subplots(figsize=(11, 8.5))
+        ax.axis('tight')
+        ax.axis('off')
+
+        top_products = df.nlargest(15, 'TAXBLEAMT')[['ITNAME', 'COMPANY', 'QTY', 'TAXBLEAMT', 'GST_AMOUNT', 'TOTAL_WITH_GST']].copy()
+        top_products['QTY'] = top_products['QTY'].astype(int)
+        top_products['TAXBLEAMT'] = top_products['TAXBLEAMT'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_products['GST_AMOUNT'] = top_products['GST_AMOUNT'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_products['TOTAL_WITH_GST'] = top_products['TOTAL_WITH_GST'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_products.columns = ['Product Name', 'Company', 'Qty', 'Revenue', 'GST', 'Total']
+
+        table = ax.table(cellText=top_products.values, colLabels=top_products.columns,
+                        cellLoc='left', loc='center', bbox=[0, 0, 1, 1])
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1, 2)
+
+        for (i, j), cell in table.get_celld().items():
+            if i == 0:
+                cell.set_facecolor('#667eea')
+                cell.set_text_props(weight='bold', color='white')
+            else:
+                cell.set_facecolor('#f8f9ff' if i % 2 == 0 else 'white')
+
+        fig.suptitle('Top 15 Products by Revenue', fontsize=16, fontweight='bold', y=0.98)
         pdf.savefig(fig, bbox_inches='tight')
         plt.close()
 
-        # Page 3: Top Products by Quantity Chart
-        fig = plt.figure(figsize=(11, 8.5))
-        top_qty = df.nlargest(15, 'QTY')
-        colors = plt.cm.viridis(np.linspace(0, 1, len(top_qty)))
-        plt.barh(range(len(top_qty)), top_qty['QTY'], color=colors)
-        plt.yticks(range(len(top_qty)), top_qty['ITNAME'])
-        plt.xlabel('Quantity Sold', fontsize=12, fontweight='bold')
-        plt.title('Top 15 Products by Quantity', fontsize=16, fontweight='bold', pad=20)
-        plt.gca().invert_yaxis()
-        plt.tight_layout()
+        # Page 3: Top Products by Quantity Table
+        fig, ax = plt.subplots(figsize=(11, 8.5))
+        ax.axis('tight')
+        ax.axis('off')
+
+        top_qty = df.nlargest(15, 'QTY')[['ITNAME', 'COMPANY', 'QTY', 'TAXBLEAMT', 'GST_AMOUNT', 'TOTAL_WITH_GST']].copy()
+        top_qty['QTY'] = top_qty['QTY'].astype(int)
+        top_qty['TAXBLEAMT'] = top_qty['TAXBLEAMT'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_qty['GST_AMOUNT'] = top_qty['GST_AMOUNT'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_qty['TOTAL_WITH_GST'] = top_qty['TOTAL_WITH_GST'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_qty.columns = ['Product Name', 'Company', 'Qty', 'Revenue', 'GST', 'Total']
+
+        table = ax.table(cellText=top_qty.values, colLabels=top_qty.columns,
+                        cellLoc='left', loc='center', bbox=[0, 0, 1, 1])
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1, 2)
+
+        for (i, j), cell in table.get_celld().items():
+            if i == 0:
+                cell.set_facecolor('#667eea')
+                cell.set_text_props(weight='bold', color='white')
+            else:
+                cell.set_facecolor('#f8f9ff' if i % 2 == 0 else 'white')
+
+        fig.suptitle('Top 15 Products by Quantity', fontsize=16, fontweight='bold', y=0.98)
         pdf.savefig(fig, bbox_inches='tight')
         plt.close()
 
-        # Page 4: Company Revenue Chart
-        fig = plt.figure(figsize=(11, 8.5))
-        top_companies = company_summary.nlargest(15, 'Total_Revenue')
-        colors = plt.cm.Set3(np.linspace(0, 1, len(top_companies)))
-        plt.barh(range(len(top_companies)), top_companies['Total_Revenue'], color=colors)
-        plt.yticks(range(len(top_companies)), top_companies.index)
-        plt.xlabel('Total Revenue (Rs.)', fontsize=12, fontweight='bold')
-        plt.title('Top 15 Companies by Revenue', fontsize=16, fontweight='bold', pad=20)
-        plt.gca().invert_yaxis()
+        # Page 4: Company Revenue Table
+        fig, ax = plt.subplots(figsize=(11, 8.5))
+        ax.axis('tight')
+        ax.axis('off')
 
-        for i, v in enumerate(top_companies['Total_Revenue']):
-            plt.text(v, i, f' Rs.{v:,.0f}', va='center', fontsize=10, fontweight='bold')
+        top_companies = company_summary.nlargest(15, 'Total_Revenue')[['Product_Count', 'Total_Quantity', 'Total_Revenue', 'Total_GST', 'Total_With_GST', 'Market_Share_%']].copy()
+        top_companies['Total_Quantity'] = top_companies['Total_Quantity'].astype(int)
+        top_companies['Total_Revenue'] = top_companies['Total_Revenue'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_companies['Total_GST'] = top_companies['Total_GST'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_companies['Total_With_GST'] = top_companies['Total_With_GST'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_companies['Market_Share_%'] = top_companies['Market_Share_%'].apply(lambda x: f"{x:.2f}%")
+        top_companies.insert(0, 'Company', top_companies.index)
+        top_companies.columns = ['Company', 'Products', 'Qty', 'Revenue', 'GST', 'Total', 'Market Share']
 
-        plt.tight_layout()
+        table = ax.table(cellText=top_companies.values, colLabels=top_companies.columns,
+                        cellLoc='left', loc='center', bbox=[0, 0, 1, 1])
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        table.scale(1, 2)
+
+        for (i, j), cell in table.get_celld().items():
+            if i == 0:
+                cell.set_facecolor('#667eea')
+                cell.set_text_props(weight='bold', color='white')
+            else:
+                cell.set_facecolor('#f8f9ff' if i % 2 == 0 else 'white')
+
+        fig.suptitle('Top 15 Companies by Revenue', fontsize=16, fontweight='bold', y=0.98)
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+
+        # Page 5: Top Companies by Quantity Table
+        fig, ax = plt.subplots(figsize=(11, 8.5))
+        ax.axis('tight')
+        ax.axis('off')
+
+        top_companies_qty = company_summary.nlargest(15, 'Total_Quantity')[['Product_Count', 'Total_Quantity', 'Total_Revenue', 'Total_GST', 'Total_With_GST', 'Market_Share_%']].copy()
+        top_companies_qty['Total_Quantity'] = top_companies_qty['Total_Quantity'].astype(int)
+        top_companies_qty['Total_Revenue'] = top_companies_qty['Total_Revenue'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_companies_qty['Total_GST'] = top_companies_qty['Total_GST'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_companies_qty['Total_With_GST'] = top_companies_qty['Total_With_GST'].apply(lambda x: f"Rs.{x:,.2f}")
+        top_companies_qty['Market_Share_%'] = top_companies_qty['Market_Share_%'].apply(lambda x: f"{x:.2f}%")
+        top_companies_qty.insert(0, 'Company', top_companies_qty.index)
+        top_companies_qty.columns = ['Company', 'Products', 'Qty', 'Revenue', 'GST', 'Total', 'Market Share']
+
+        table = ax.table(cellText=top_companies_qty.values, colLabels=top_companies_qty.columns,
+                        cellLoc='left', loc='center', bbox=[0, 0, 1, 1])
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        table.scale(1, 2)
+
+        for (i, j), cell in table.get_celld().items():
+            if i == 0:
+                cell.set_facecolor('#667eea')
+                cell.set_text_props(weight='bold', color='white')
+            else:
+                cell.set_facecolor('#f8f9ff' if i % 2 == 0 else 'white')
+
+        fig.suptitle('Top 15 Companies by Quantity', fontsize=16, fontweight='bold', y=0.98)
         pdf.savefig(fig, bbox_inches='tight')
         plt.close()
 
@@ -293,7 +370,7 @@ def analyze_data(json_data):
         return {
             'success': True,
             'pdf_bytes': pdf_bytes,
-            'filename': f'Sales_Analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf',
+            'filename': f'Sales_Analysis_{datetime.now().strftime("%Y_%m_%d")}.pdf',
             'summary': {
                 'total_rows': len(df),
                 'total_revenue': float(df['TAXBLEAMT'].sum()),
